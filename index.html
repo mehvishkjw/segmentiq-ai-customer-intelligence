@@ -1,0 +1,584 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SegmentIQ AI | Customer Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f7fc;--surface:#fff;--text:#20213a;--muted:#777b96;
+  --purple:#7357ef;--purple-light:#eeeaff;--pink:#ff7096;
+  --orange:#ffb45c;--teal:#2ec9b8;--blue:#5e9cff;
+  --border:#ececf5;--shadow:0 8px 30px rgba(38,34,87,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:#fff;border-right:1px solid var(--border);padding:25px 17px;position:fixed;inset:0 auto 0 0;overflow-y:auto;z-index:5}
+.brand{display:flex;align-items:center;gap:11px;padding:0 10px 32px}
+.brand-icon{height:42px;width:42px;border-radius:14px;background:linear-gradient(135deg,#7357ef,#b36df6);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:bold}
+.brand-name{font-family:'Space Grotesk';font-size:19px;font-weight:700;letter-spacing:-.7px}
+.brand-name span{color:var(--purple)}
+.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1.4px;margin-top:3px}
+.nav-label{padding:15px 12px 8px;color:#a2a4b8;font-size:10px;font-weight:700;letter-spacing:1.5px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 13px;margin:3px 0;border-radius:11px;color:#747790;font-size:13px;font-weight:600;transition:.2s}
+.nav-item:hover,.nav-item.active{background:var(--purple-light);color:var(--purple)}
+.nav-item .icon{width:20px;text-align:center;font-size:17px}
+.sidebar-bottom{margin-top:30px;padding:17px;background:#f7f4ff;border-radius:15px}
+.sidebar-bottom strong{font-size:12px}
+.sidebar-bottom p{font-size:11px;color:var(--muted);line-height:1.6}
+.sidebar-bottom button{border:0;background:var(--purple);color:white;border-radius:8px;padding:9px 12px;font-size:11px;font-weight:700;width:100%}
+.main{margin-left:250px;width:calc(100% - 250px);padding:28px 34px 45px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:27px}
+.breadcrumb{color:var(--muted);font-size:12px}
+.breadcrumb b{color:var(--text)}
+.top-actions{display:flex;align-items:center;gap:12px}
+.demo-badge{background:#fff4df;color:#a66b11;padding:8px 12px;border-radius:9px;font-size:11px;font-weight:700}
+.avatar{width:37px;height:37px;border-radius:12px;background:#e8e1ff;color:var(--purple);display:grid;place-items:center;font-weight:700}
+.page{display:none}
+.page.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:.4;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}
+.eyebrow{font-size:10px;color:var(--purple);font-weight:700;letter-spacing:1.7px;text-transform:uppercase;margin-bottom:9px}
+h1,h2,h3,p{margin-top:0}
+h1{font-family:'Space Grotesk';font-size:30px;letter-spacing:-1.2px;margin-bottom:8px}
+.heading p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:0}
+.primary-btn{background:var(--purple);color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:700;font-size:12px;box-shadow:0 5px 15px #7357ef33}
+.primary-btn:hover{background:#6245e1}
+.secondary-btn{background:#fff;border:1px solid var(--border);padding:11px 14px;border-radius:10px;font-weight:600;font-size:12px;color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.stat-card,.card{background:var(--surface);border:1px solid var(--border);border-radius:17px;box-shadow:var(--shadow)}
+.stat-card{padding:20px;position:relative;overflow:hidden}
+.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;font-weight:600}
+.stat-icon{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:18px}
+.stat-value{font-family:'Space Grotesk';font-size:29px;font-weight:700;letter-spacing:-1px;margin:15px 0 6px}
+.stat-foot{font-size:10px;color:var(--muted)}
+.positive{color:#13a98b;font-weight:700}
+.chart-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-bottom:18px}
+.card{padding:22px;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:18px}
+.card h3{font-size:14px;margin-bottom:5px}
+.card-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.chart-wrap{height:255px;position:relative}
+.pill{font-size:10px;padding:6px 9px;border-radius:7px;background:#f3f1ff;color:var(--purple);font-weight:700;white-space:nowrap}
+.insight-banner{display:grid;grid-template-columns:48px 1fr auto;gap:15px;align-items:center;padding:20px 23px;border-radius:17px;background:linear-gradient(110deg,#eeeaff,#f9efff 65%,#fff0f5);margin-bottom:20px}
+.insight-symbol{width:46px;height:46px;border-radius:14px;background:white;display:grid;place-items:center;font-size:23px}
+.insight-banner h3{font-size:14px;margin-bottom:5px}
+.insight-banner p{font-size:12px;color:#666985;line-height:1.6;margin-bottom:0}
+.insight-banner button{border:1px solid #d8ccff;background:#fff;color:var(--purple);border-radius:9px;padding:10px 13px;font-size:11px;font-weight:700}
+.table-card{margin-top:18px}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
+th{text-align:left;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:#9699b0;font-weight:700;padding:13px 12px;border-bottom:1px solid var(--border)}
+td{padding:14px 12px;border-bottom:1px solid #f1f1f7}
+tbody tr:hover{background:#faf9ff}
+.customer-cell{display:flex;align-items:center;gap:10px;font-weight:700}
+.mini-avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:11px;font-weight:700}
+.segment-tag{display:inline-block;padding:6px 9px;border-radius:7px;font-size:10px;font-weight:700;white-space:nowrap}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.search-box,.filter-select{padding:11px 13px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:12px;outline:none;color:var(--text)}
+.search-box{min-width:220px;flex:1}
+.search-box:focus,.filter-select:focus{border-color:var(--purple)}
+.segment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.segment-card{background:#fff;border:1px solid var(--border);border-radius:17px;padding:20px;box-shadow:var(--shadow);transition:transform .2s,border .2s}
+.segment-card:hover{transform:translateY(-3px);border-color:#d4caff}
+.segment-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.segment-dot{width:12px;height:12px;border-radius:4px;display:inline-block;margin-right:7px}
+.segment-card h3{font-size:14px;line-height:1.5;margin:12px 0 7px}
+.segment-card p{font-size:11px;color:var(--muted);line-height:1.65;min-height:54px}
+.segment-count{font-family:'Space Grotesk';font-size:26px;font-weight:700}
+.segment-meta{font-size:10px;color:var(--muted);margin:4px 0 15px}
+.progress{height:7px;border-radius:9px;background:#f0eff6;overflow:hidden;margin:10px 0 15px}
+.progress span{display:block;height:100%;border-radius:9px}
+.segment-foot{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted)}
+.segment-foot button{border:0;background:none;color:var(--purple);font-size:11px;font-weight:700}
+.customer-profile{display:flex;align-items:center;gap:13px}
+.profile-avatar{height:48px;width:48px;border-radius:15px;background:#eeeaff;display:grid;place-items:center;color:var(--purple);font-weight:700;font-size:16px}
+.customer-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.detail-box{background:#f8f7fd;padding:15px;border-radius:12px}
+.detail-box span{display:block;color:var(--muted);font-size:10px;margin-bottom:7px}
+.detail-box strong{font-family:'Space Grotesk';font-size:20px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.strategy-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:11px;font-weight:700;margin-bottom:7px}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff;font-size:12px;outline:none}
+.form-group textarea{min-height:100px;resize:vertical;line-height:1.6}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--purple)}
+.result-box{background:#faf9ff;border:1px solid #e8e2ff;border-radius:13px;padding:18px;min-height:250px}
+.result-box h3{font-size:14px;margin-bottom:12px}
+.result-content{font-size:12px;color:#555976;line-height:1.8;white-space:pre-wrap}
+.result-content ul{padding-left:18px}
+.recommendation{padding:13px;background:#fff;border:1px solid var(--border);border-radius:11px;margin:10px 0}
+.recommendation strong{display:block;font-size:12px;margin-bottom:5px;color:var(--text)}
+.recommendation p{font-size:11px;line-height:1.65;color:var(--muted);margin:0}
+.upload-zone{border:2px dashed #d9d3fa;background:#faf9ff;border-radius:15px;text-align:center;padding:35px 20px}
+.upload-zone .upload-icon{font-size:35px;margin-bottom:10px}
+.upload-zone h3{font-size:14px;margin-bottom:7px}
+.upload-zone p{font-size:11px;color:var(--muted);line-height:1.7}
+.upload-zone input{display:none}
+.upload-label{display:inline-block;background:var(--purple);color:white;padding:11px 16px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer}
+.note{font-size:11px;line-height:1.7;color:var(--muted)}
+.notice{padding:13px 15px;border-radius:10px;background:#fff7e8;color:#8c651b;font-size:11px;line-height:1.7;margin:15px 0}
+.footer{text-align:center;color:#a1a2b6;font-size:10px;padding:28px 0 0}
+.empty-state{text-align:center;padding:35px;color:var(--muted);font-size:12px}
+.mobile-menu{display:none}
+@media(max-width:1100px){
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .segment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .chart-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+ .sidebar{transform:translateX(-100%);transition:transform .25s;width:250px;box-shadow:var(--shadow)}
+ .sidebar.open{transform:translateX(0)}
+ .main{margin-left:0;width:100%;padding:18px 15px 35px}
+ .mobile-menu{display:inline-block;border:1px solid var(--border);background:white;padding:9px 12px;border-radius:9px}
+ .topbar{margin-bottom:22px}
+ .heading{flex-direction:column}
+ .heading h1{font-size:26px}
+ .stats{gap:10px}
+ .stat-card{padding:15px}
+ .stat-value{font-size:24px}
+ .segment-grid,.two-col,.strategy-layout{grid-template-columns:1fr}
+ .insight-banner{grid-template-columns:40px 1fr}
+ .insight-banner button{grid-column:2;justify-self:start}
+ .customer-detail-grid{grid-template-columns:1fr 1fr}
+ .demo-badge{display:none}
+}
+@media(max-width:390px){.stats{grid-template-columns:1fr}.segment-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-icon">S</div>
+    <div><div class="brand-name">Segment<span>IQ</span></div><small>AI CUSTOMER INTELLIGENCE</small></div>
+  </div>
+  <div class="nav-label">WORKSPACE</div>
+  <div class="nav-item active" data-page="dashboard"><span class="icon">◫</span> Executive Dashboard</div>
+  <div class="nav-item" data-page="segments"><span class="icon">◉</span> Behavioral Segments</div>
+  <div class="nav-item" data-page="customers"><span class="icon">♙</span> Customer Explorer</div>
+  <div class="nav-label">INTELLIGENCE</div>
+  <div class="nav-item" data-page="strategist"><span class="icon">✳</span> AI Marketing Strategist</div>
+  <div class="nav-item" data-page="campaigns"><span class="icon">↗</span> Campaign Studio</div>
+  <div class="nav-label">DATA MANAGEMENT</div>
+  <div class="nav-item" data-page="data"><span class="icon">▤</span> Data Centre</div>
+  <div class="sidebar-bottom">
+    <div style="font-size:23px;margin-bottom:8px">✦</div>
+    <strong>From data to decisions</strong>
+    <p>Understand customer behavior, identify valuable segments, and develop differentiated marketing strategies.</p>
+    <button onclick="navigate('strategist')">Explore recommendations →</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div class="breadcrumb">Workspace / <b id="breadcrumb">Executive Dashboard</b></div>
+    </div>
+    <div class="top-actions">
+      <span class="demo-badge">● DEMO DATA</span>
+      <div class="avatar">SI</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="page active" id="page-dashboard">
+    <div class="heading">
+      <div><div class="eyebrow">CUSTOMER INTELLIGENCE OVERVIEW</div><h1>Know your customers.<br>Market with purpose.</h1><p>Move beyond broad demographics and uncover the behavioral patterns that drive customer value.</p></div>
+      <button class="primary-btn" onclick="navigate('strategist')">✳ Generate AI insights</button>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-top">Total customers <span class="stat-icon" style="background:#eeeaff">♙</span></div><div class="stat-value" id="totalCustomers">1,248</div><div class="stat-foot"><span class="positive">●</span> Customer records analysed</div></div>
+      <div class="stat-card"><div class="stat-top">Behavioral segments <span class="stat-icon" style="background:#fff0f5">◉</span></div><div class="stat-value" id="totalSegments">6</div><div class="stat-foot">Distinct customer groups</div></div>
+      <div class="stat-card"><div class="stat-top">Average order value <span class="stat-icon" style="background:#fff4e4">₹</span></div><div class="stat-value" id="avgOrder">₹2,460</div><div class="stat-foot">Across recorded purchases</div></div>
+      <div class="stat-card"><div class="stat-top">At-risk customers <span class="stat-icon" style="background:#e5faf5">!</span></div><div class="stat-value" id="atRisk">18.4%</div><div class="stat-foot">Opportunity for retention</div></div>
+    </div>
+
+    <div class="insight-banner">
+      <div class="insight-symbol">✦</div>
+      <div><h3>Your customer intelligence brief</h3><p id="briefText">High-value customers and discount-driven shoppers respond to different motivations. A single promotional strategy can waste budget on both groups.</p></div>
+      <button onclick="navigate('strategist')">View strategy →</button>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-head"><div><h3>Customer segment distribution</h3><div class="card-sub">How the customer base is divided by behavioral group</div></div><span class="pill">BEHAVIOR</span></div>
+        <div class="chart-wrap"><canvas id="segmentChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>Revenue by segment</h3><div class="card-sub">Illustrative revenue contribution in ₹ lakh</div></div><span class="pill">REVENUE</span></div>
+        <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-head"><div><h3>Customer engagement signals</h3><div class="card-sub">Relative behavioral engagement score by segment</div></div><span class="pill">ENGAGEMENT</span></div>
+        <div class="chart-wrap"><canvas id="engagementChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>Recommended business priorities</h3><div class="card-sub">Where marketing teams can focus first</div></div></div>
+        <div id="priorityList"></div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-head"><div><h3>Recently analysed customers</h3><div class="card-sub">Sample customer records and assigned behavioral segments</div></div><button class="secondary-btn" onclick="navigate('customers')">View all customers →</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Segment</th><th>Total spend</th><th>Orders</th><th>Engagement</th></tr></thead><tbody id="recentCustomers"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- SEGMENTS -->
+  <section class="page" id="page-segments">
+    <div class="heading"><div><div class="eyebrow">BEHAVIORAL INTELLIGENCE</div><h1>Behavioral Segments</h1><p>Explore groups based on purchasing patterns, price sensitivity, engagement, and customer value.</p></div><button class="primary-btn" onclick="navigate('strategist')">✳ Build a strategy</button></div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-top">Segments identified <span class="stat-icon">◉</span></div><div class="stat-value" id="segStat1">6</div><div class="stat-foot">Illustrative behavioral profiles</div></div>
+      <div class="stat-card"><div class="stat-top">Largest segment <span class="stat-icon">◈</span></div><div class="stat-value" id="segStat2">28%</div><div class="stat-foot" id="largestName">Discount-driven shoppers</div></div>
+      <div class="stat-card"><div class="stat-top">Retention opportunity <span class="stat-icon">↗</span></div><div class="stat-value">18.4%</div><div class="stat-foot">Illustrative at-risk share</div></div>
+      <div class="stat-card"><div class="stat-top">Value focus <span class="stat-icon">₹</span></div><div class="stat-value">High</div><div class="stat-foot">Prioritise value over reach alone</div></div>
+    </div>
+    <div class="filters"><input class="search-box" id="segmentSearch" placeholder="Search segments..." oninput="renderSegments()"><select class="filter-select" id="segmentSort" onchange="renderSegments()"><option value="size">Sort: Largest segment</option><option value="value">Sort: Customer value</option><option value="name">Sort: Name A–Z</option></select></div>
+    <div class="segment-grid" id="segmentGrid"></div>
+  </section>
+
+  <!-- CUSTOMERS -->
+  <section class="page" id="page-customers">
+    <div class="heading"><div><div class="eyebrow">CUSTOMER-LEVEL ANALYSIS</div><h1>Customer Explorer</h1><p>Search customer records and compare spending, purchasing frequency, and engagement.</p></div><button class="secondary-btn" onclick="exportCSV()">↓ Export customer data</button></div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-top">Visible records <span class="stat-icon">♙</span></div><div class="stat-value" id="visibleCount">1,248</div><div class="stat-foot">Based on current filters</div></div>
+      <div class="stat-card"><div class="stat-top">Average spend <span class="stat-icon">₹</span></div><div class="stat-value" id="customerAvgSpend">₹6,420</div><div class="stat-foot">Per customer in sample</div></div>
+      <div class="stat-card"><div class="stat-top">Average orders <span class="stat-icon">▤</span></div><div class="stat-value" id="customerAvgOrders">5.2</div><div class="stat-foot">Per customer in sample</div></div>
+      <div class="stat-card"><div class="stat-top">High engagement <span class="stat-icon">✳</span></div><div class="stat-value" id="highEngagement">32%</div><div class="stat-foot">Illustrative share</div></div>
+    </div>
+    <div class="filters"><input class="search-box" id="customerSearch" placeholder="Search name or customer ID..." oninput="renderCustomers()"><select class="filter-select" id="customerSegmentFilter" onchange="renderCustomers()"><option value="">All segments</option></select><select class="filter-select" id="customerSort" onchange="renderCustomers()"><option value="spend">Sort: Highest spend</option><option value="orders">Sort: Most orders</option><option value="engagement">Sort: Engagement</option></select></div>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Customer</th><th>Behavioral segment</th><th>Total spend</th><th>Orders</th><th>Last purchase</th><th>Engagement</th><th>Action</th></tr></thead><tbody id="customerTable"></tbody></table></div><div class="note" id="customerPagination" style="padding-top:15px"></div></div>
+    <div class="card" id="customerDetail" style="margin-top:18px;display:none"></div>
+  </section>
+
+  <!-- STRATEGIST -->
+  <section class="page" id="page-strategist">
+    <div class="heading"><div><div class="eyebrow">AI-ASSISTED DECISION SUPPORT</div><h1>AI Marketing Strategist</h1><p>Translate customer behavior into differentiated marketing actions and testable campaign ideas.</p></div><span class="pill">DEMO MODE</span></div>
+    <div class="strategy-layout">
+      <div class="card">
+        <div class="card-head"><div><h3>Build your strategy</h3><div class="card-sub">Choose a customer group and a business objective.</div></div><span style="font-size:23px">✳</span></div>
+        <div class="form-group"><label>Behavioral segment</label><select id="strategySegment"></select></div>
+        <div class="form-group"><label>Primary marketing objective</label><select id="strategyObjective"><option value="retention">Improve retention</option><option value="revenue">Increase revenue per customer</option><option value="conversion">Improve conversion rate</option><option value="engagement">Increase engagement</option><option value="acquisition">Encourage referrals and acquisition</option></select></div>
+        <div class="form-group"><label>Available marketing channel</label><select id="strategyChannel"><option>Email marketing</option><option>WhatsApp / SMS</option><option>Paid social media</option><option>Website / app personalisation</option><option>Loyalty programme</option><option>Omnichannel campaign</option></select></div>
+        <div class="form-group"><label>Additional context (optional)</label><textarea id="strategyContext" placeholder="Example: Focus on the festive season, limit discounts, or target customers inactive for 60 days."></textarea></div>
+        <button class="primary-btn" style="width:100%" onclick="generateStrategy()">✦ Generate marketing recommendations</button>
+        <p class="note" style="margin:12px 0 0">This prototype uses transparent, rule-based demo logic. Connect a secure LLM backend for live AI-generated responses.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>Strategy output</h3><div class="card-sub">Recommendations tailored to the selected behavior and objective.</div></div><span class="pill">ACTION PLAN</span></div>
+        <div class="result-box" id="strategyOutput"><h3>Your strategy will appear here</h3><div class="result-content">Select a behavioral segment, define your objective, and generate recommendations to see a suggested marketing action plan.</div></div>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:18px">
+      <div class="card"><div class="card-head"><div><h3>Why behavioral segmentation?</h3><div class="card-sub">The business case for moving beyond broad demographics</div></div></div>
+        <div class="recommendation"><strong>1. More relevant messages</strong><p>Match offers and content to observed customer behavior rather than assuming all customers in an age group respond similarly.</p></div>
+        <div class="recommendation"><strong>2. Better budget allocation</strong><p>Prioritise high-value customers, retention opportunities, and segments with promising conversion signals.</p></div>
+        <div class="recommendation"><strong>3. Measurable learning</strong><p>Use controlled experiments to determine whether segment-specific messages improve conversion, repeat purchase, and contribution margin.</p></div>
+      </div>
+      <div class="card"><div class="card-head"><div><h3>Recommended measurement framework</h3><div class="card-sub">Evaluate impact rather than campaign activity alone</div></div></div>
+        <div class="recommendation"><strong>Conversion rate</strong><p>Percentage of targeted customers who complete the desired action.</p></div>
+        <div class="recommendation"><strong>Repeat purchase rate</strong><p>Share of customers who return and buy again during the measurement window.</p></div>
+        <div class="recommendation"><strong>Incremental revenue / margin</strong><p>Compare campaign outcomes with a suitable holdout group to estimate incremental impact.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAMPAIGNS -->
+  <section class="page" id="page-campaigns">
+    <div class="heading"><div><div class="eyebrow">CAMPAIGN PLANNING</div><h1>Campaign Studio</h1><p>Turn segment insights into campaign briefs with a clear audience, message, channel, and KPI.</p></div><button class="primary-btn" onclick="createCampaign()">+ Create campaign brief</button></div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-top">Campaign briefs <span class="stat-icon">▤</span></div><div class="stat-value" id="campaignCount">3</div><div class="stat-foot">Illustrative planning workspace</div></div>
+      <div class="stat-card"><div class="stat-top">Segments covered <span class="stat-icon">◉</span></div><div class="stat-value">6</div><div class="stat-foot">Distinct audiences available</div></div>
+      <div class="stat-card"><div class="stat-top">Test approach <span class="stat-icon">⚖</span></div><div class="stat-value">A/B</div><div class="stat-foot">Validate message effectiveness</div></div>
+      <div class="stat-card"><div class="stat-top">Primary focus <span class="stat-icon">↗</span></div><div class="stat-value">ROI</div><div class="stat-foot">Incremental return, not reach alone</div></div>
+    </div>
+    <div class="card"><div class="card-head"><div><h3>Campaign planning board</h3><div class="card-sub">Select a brief to view its audience and strategy.</div></div><span class="pill">PLANNING</span></div><div class="segment-grid" id="campaignGrid"></div></div>
+    <div class="card" id="campaignDetail" style="margin-top:18px;display:none"></div>
+    <div class="notice">Campaigns in this demo are planning concepts only. No emails, messages, advertisements, or customer communications are sent by this website.</div>
+  </section>
+
+  <!-- DATA -->
+  <section class="page" id="page-data">
+    <div class="heading"><div><div class="eyebrow">DATA MANAGEMENT</div><h1>Data Centre</h1><p>Inspect the sample dataset or upload a CSV file to explore your own customer data.</p></div><button class="secondary-btn" onclick="downloadTemplate()">↓ Download CSV template</button></div>
+    <div class="two-col">
+      <div class="card"><div class="card-head"><div><h3>Upload customer dataset</h3><div class="card-sub">CSV files are processed locally in your browser.</div></div></div>
+        <div class="upload-zone"><div class="upload-icon">⇧</div><h3>Import customer data</h3><p>Upload a CSV with customer-level behavioral and transaction data.<br>Your file is not sent to a server by this prototype.</p><label class="upload-label" for="csvFile">Choose CSV file</label><input id="csvFile" type="file" accept=".csv,text/csv" onchange="handleCSV(event)"><div id="uploadStatus" class="note" style="margin-top:12px"></div></div>
+        <div class="notice">Do not upload names, email addresses, phone numbers, payment details, or other personal data unless you have appropriate authorisation and safeguards.</div>
+      </div>
+      <div class="card"><div class="card-head"><div><h3>Expected data fields</h3><div class="card-sub">Use one row per customer for this demo.</div></div></div>
+        <div class="table-wrap"><table style="min-width:0"><thead><tr><th>Column</th><th>Purpose</th></tr></thead><tbody>
+          <tr><td><b>customer_id</b></td><td>Unique customer identifier</td></tr>
+          <tr><td><b>total_spend</b></td><td>Total purchase value</td></tr>
+          <tr><td><b>orders</b></td><td>Number of purchases</td></tr>
+          <tr><td><b>days_since_purchase</b></td><td>Recency of last purchase</td></tr>
+          <tr><td><b>discount_usage</b></td><td>Discount use, 0–1 or percentage</td></tr>
+          <tr><td><b>engagement</b></td><td>Engagement score, 0–100</td></tr>
+        </tbody></table></div>
+        <p class="note" style="margin-top:14px">Optional fields: customer_name, segment, website_visits, product_views, cart_additions, email_clicks, and average_order_value.</p>
+      </div>
+    </div>
+    <div class="card"><div class="card-head"><div><h3>Dataset status</h3><div class="card-sub">Current browser session</div></div><span class="pill" id="dataStatus">SAMPLE DATA</span></div>
+      <div class="customer-detail-grid">
+        <div class="detail-box"><span>Records loaded</span><strong id="dataRecords">1,248</strong></div>
+        <div class="detail-box"><span>Available fields</span><strong id="dataFields">6</strong></div>
+        <div class="detail-box"><span>Source</span><strong id="dataSource" style="font-size:15px">Demo</strong></div>
+      </div>
+      <button class="secondary-btn" onclick="resetDemo()">Reset to sample dataset</button>
+    </div>
+  </section>
+
+  <div class="footer">SegmentIQ AI · Behavioral Customer Intelligence · Educational prototype</div>
+</main>
+</div>
+
+<script>
+const COLORS=['#7357ef','#ff7096','#ffb45c','#2ec9b8','#5e9cff','#ad7bf5'];
+const SEGMENTS=[
+ {name:'Loyal High-Value Customers',short:'Loyal high-value',color:COLORS[0],bg:'#eeeaff',count:210,value:9,description:'Frequent purchasers with high spending and strong brand affinity.',behavior:'High spend, frequent purchases, low discount dependence.',strategy:'Reward loyalty with early access, exclusive benefits, premium bundles, and personalised recognition.',objective:'Increase lifetime value without unnecessary discounts.',kpi:'Repeat purchase rate and customer lifetime value',channel:'Loyalty programme'},
+ {name:'Discount-Driven Shoppers',short:'Discount-driven',color:COLORS[1],bg:'#fff0f5',count:350,value:5,description:'Customers whose purchases are strongly influenced by promotional incentives.',behavior:'High discount usage and greater price sensitivity.',strategy:'Use targeted offers, minimum-spend thresholds, and value bundles. Test margin impact before scaling discounts.',objective:'Convert price-sensitive demand while protecting contribution margin.',kpi:'Incremental conversion and contribution margin',channel:'Email marketing'},
+ {name:'Emerging Loyalists',short:'Emerging loyalists',color:COLORS[2],bg:'#fff4e4',count:190,value:7,description:'Promising customers showing early repeat-purchase or engagement signals.',behavior:'Moderate purchase frequency and growing engagement.',strategy:'Create a second-purchase journey, recommend relevant products, and introduce a simple loyalty milestone.',objective:'Build repeat-purchase habits.',kpi:'Second-purchase conversion and 90-day repeat rate',channel:'WhatsApp / SMS'},
+ {name:'At-Risk Regulars',short:'At-risk regulars',color:COLORS[3],bg:'#e5faf5',count:230,value:8,description:'Previously active customers whose recent behavior suggests declining activity.',behavior:'Longer time since purchase relative to their previous pattern.',strategy:'Trigger a timely re-engagement message, highlight relevant new arrivals, and test a low-cost win-back incentive.',objective:'Recover valuable customers before they lapse.',kpi:'Reactivation rate and recovered margin',channel:'Email marketing'},
+ {name:'High-Intent Browsers',short:'High-intent browsers',color:COLORS[4],bg:'#edf4ff',count:145,value:6,description:'Customers with strong browsing or cart activity but limited completed purchases.',behavior:'High product views or cart additions with lower conversion.',strategy:'Reduce purchase friction, clarify delivery and return policies, and use consent-based cart reminders.',objective:'Convert expressed purchase intent.',kpi:'Cart-to-purchase conversion rate',channel:'Website / app personalisation'},
+ {name:'Occasional Premium Buyers',short:'Occasional premium',color:COLORS[5],bg:'#f5edff',count:123,value:8,description:'Infrequent customers who make comparatively high-value purchases.',behavior:'Lower purchase frequency but higher order values.',strategy:'Use curated product recommendations, premium launches, and occasion-based reminders rather than frequent blanket promotions.',objective:'Increase purchase frequency while preserving premium positioning.',kpi:'Purchase frequency and average order value',channel:'Paid social media'}
+];
+const NAMES=['Aarav Sharma','Aanya Mehta','Rohan Kapoor','Diya Nair','Ishaan Verma','Ananya Rao','Kabir Singh','Myra Shah','Vivaan Iyer','Sara Khan','Arjun Das','Kiara Malhotra','Reyansh Patel','Zoya Ali','Aditya Joshi','Tara Menon','Neil Khanna','Ira Bose','Dev Malhotra','Sana Qureshi'];
+let customers=[];
+let segmentChart,revenueChart,engagementChart;
+let campaigns=[
+ {name:'Loyalty, Not Discounts',segment:0,channel:'Loyalty programme',objective:'Increase customer lifetime value',message:'Reward repeat customers with early access and exclusive benefits.',kpi:'Repeat purchase rate',budget:'Medium'},
+ {name:'The Second Purchase',segment:2,channel:'WhatsApp / SMS',objective:'Increase repeat purchase',message:'A personalised follow-up with relevant recommendations after the first order.',kpi:'Second-purchase conversion',budget:'Low'},
+ {name:'Come Back to What You Love',segment:3,channel:'Email marketing',objective:'Reactivate lapsed customers',message:'A relevant product update or service reminder based on previous purchase behavior.',kpi:'Reactivation rate',budget:'Medium'}
+];
+function money(n){return '₹'+Math.round(n).toLocaleString('en-IN')}
+function fmt(n){return Number(n).toLocaleString('en-IN')}
+function makeDemoCustomers(){
+ customers=[];
+ for(let i=0;i<1248;i++){
+  const r=Math.random();
+  let s;
+  if(r<.168)s=0;else if(r<.448)s=1;else if(r<.600)s=2;else if(r<.784)s=3;else if(r<.900)s=4;else s=5;
+  const g=SEGMENTS[s];
+  const spendBase=[12500,4500,6000,8500,3000,11000][s];
+  const spend=Math.round(spendBase*(.45+Math.random()*1.1));
+  const orders=Math.max(1,Math.round(([7,3,3,5,1,2][s])*(.5+Math.random())));
+  const days=[18,40,25,105,12,70][s]+Math.round(Math.random()*80);
+  const discount=[.12,.78,.35,.28,.2,.18][s];
+  const engagement=[85,56,72,38,91,62][s]+Math.round((Math.random()-.5)*20);
+  customers.push({
+   customer_id:'CUST-'+String(1001+i),customer_name:NAMES[i%NAMES.length],
+   segment:s,total_spend:spend,orders,days_since_purchase:days,
+   discount_usage:Math.max(0,Math.min(1,discount+(Math.random()-.5)*.18)),
+   engagement:Math.max(0,Math.min(100,engagement)),
+   average_order_value:Math.round(spend/orders),
+   website_visits:Math.round(3+Math.random()*30),
+   product_views:Math.round(5+Math.random()*70),
+   cart_additions:Math.round(Math.random()*12),
+   email_clicks:Math.round(Math.random()*15)
+  });
+ }
+}
+function segmentStats(){
+ const counts=SEGMENTS.map((s,i)=>customers.filter(c=>c.segment===i).length);
+ const total=customers.length||1;
+ return SEGMENTS.map((s,i)=>({...s,actualCount:counts[i],share:counts[i]/total*100,
+  revenue:customers.filter(c=>c.segment===i).reduce((a,c)=>a+c.total_spend,0),
+  avgSpend:counts[i]?customers.filter(c=>c.segment===i).reduce((a,c)=>a+c.total_spend,0)/counts[i]:0
+ }));
+}
+function renderDashboard(){
+ const total=customers.length||1;
+ const avg=customers.reduce((a,c)=>a+c.average_order_value,0)/total;
+ const risk=customers.filter(c=>c.days_since_purchase>90).length/total*100;
+ document.getElementById('totalCustomers').textContent=fmt(customers.length);
+ document.getElementById('totalSegments').textContent=SEGMENTS.length;
+ document.getElementById('avgOrder').textContent=money(avg);
+ document.getElementById('atRisk').textContent=risk.toFixed(1)+'%';
+ document.getElementById('segStat1').textContent=SEGMENTS.length;
+ const stats=segmentStats();
+ const largest=[...stats].sort((a,b)=>b.actualCount-a.actualCount)[0];
+ document.getElementById('segStat2').textContent=largest.share.toFixed(0)+'%';
+ document.getElementById('largestName').textContent=largest.name;
+ document.getElementById('briefText').textContent=`${largest.name} represents ${largest.share.toFixed(1)}% of this dataset. Tailor messaging to each group's purchasing patterns instead of relying on one broad campaign.`;
+ document.getElementById('priorityList').innerHTML=[
+  ['#ff7096','Retention first','Identify regular customers with a long gap since their last purchase.'],
+  ['#7357ef','Protect margin','Test whether discounts create incremental purchases or subsidise existing demand.'],
+  ['#2ec9b8','Convert intent','Reduce checkout friction for customers with high browsing and cart activity.'],
+  ['#ffb45c','Grow loyalty','Help promising first-time customers make a second purchase.']
+ ].map(x=>`<div style="display:flex;gap:11px;margin:14px 0"><div style="width:9px;min-width:9px;height:37px;border-radius:5px;background:${x[0]}"></div><div><strong style="font-size:12px">${x[1]}</strong><div class="card-sub" style="margin-top:4px">${x[2]}</div></div></div>`).join('');
+ const ctx1=document.getElementById('segmentChart');
+ if(segmentChart)segmentChart.destroy();
+ segmentChart=new Chart(ctx1,{type:'doughnut',data:{labels:stats.map(s=>s.name),datasets:[{data:stats.map(s=>s.actualCount),backgroundColor:COLORS,borderWidth:0,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,cutout:'67%',plugins:{legend:{position:'right',labels:{usePointStyle:true,pointStyle:'circle',boxWidth:8,padding:13,font:{family:'DM Sans',size:10}}}}}});
+ const ctx2=document.getElementById('revenueChart');
+ if(revenueChart)revenueChart.destroy();
+ revenueChart=new Chart(ctx2,{type:'bar',data:{labels:stats.map(s=>s.short),datasets:[{data:stats.map(s=>s.revenue/100000),backgroundColor:COLORS,borderRadius:7,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:9},maxRotation:25,minRotation:0}},y:{beginAtZero:true,grid:{color:'#f0eff6'},ticks:{font:{family:'DM Sans',size:10},callback:v=>v+'L'}}}}});
+ const ctx3=document.getElementById('engagementChart');
+ if(engagementChart)engagementChart.destroy();
+ engagementChart=new Chart(ctx3,{type:'bar',data:{labels:stats.map(s=>s.short),datasets:[{data:stats.map((s,i)=>{let a=customers.filter(c=>c.segment===i);return a.length?a.reduce((sum,c)=>sum+c.engagement,0)/a.length:0}),backgroundColor:COLORS,borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,grid:{color:'#f0eff6'},ticks:{font:{family:'DM Sans',size:10}}},y:{grid:{display:false},ticks:{font:{family:'DM Sans',size:10}}}}}});
+ document.getElementById('recentCustomers').innerHTML=customers.slice(0,6).map(customerRow).join('');
+}
+function tag(s){return `<span class="segment-tag" style="background:${SEGMENTS[s].bg};color:${SEGMENTS[s].color}">${SEGMENTS[s].short}</span>`}
+function customerRow(c){return `<tr><td><div class="customer-cell"><div class="mini-avatar" style="background:${SEGMENTS[c.segment].bg};color:${SEGMENTS[c.segment].color}">${c.customer_name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div>${c.customer_name}<div class="card-sub" style="margin-top:3px">${c.customer_id}</div></div></div></td><td>${tag(c.segment)}</td><td><b>${money(c.total_spend)}</b></td><td>${c.orders}</td><td>${c.engagement}/100</td></tr>`}
+function renderSegments(){
+ const q=(document.getElementById('segmentSearch')?.value||'').toLowerCase();
+ const sort=document.getElementById('segmentSort')?.value||'size';
+ let list=segmentStats().filter(s=>(s.name+' '+s.description+' '+s.behavior).toLowerCase().includes(q));
+ if(sort==='size')list.sort((a,b)=>b.actualCount-a.actualCount);
+ if(sort==='value')list.sort((a,b)=>b.avgSpend-a.avgSpend);
+ if(sort==='name')list.sort((a,b)=>a.name.localeCompare(b.name));
+ document.getElementById('segmentGrid').innerHTML=list.map(s=>`<div class="segment-card"><div class="segment-top"><span class="pill" style="background:${s.bg};color:${s.color}">BEHAVIORAL GROUP</span><span style="color:${s.color};font-size:20px">●</span></div><h3>${s.name}</h3><p>${s.description}</p><div class="segment-count">${fmt(s.actualCount)}</div><div class="segment-meta">${s.share.toFixed(1)}% of customer base · Avg. spend ${money(s.avgSpend)}</div><div class="progress"><span style="width:${s.share}%;background:${s.color}"></span></div><div class="segment-foot"><span>Segment profile</span><button onclick="openSegmentStrategy(${s.index??SEGMENTS.findIndex(x=>x.name===s.name)})">Build strategy →</button></div></div>`).join('')||'<div class="empty-state">No segments match your search.</div>';
+}
+function renderCustomers(){
+ const q=(document.getElementById('customerSearch')?.value||'').toLowerCase();
+ const seg=document.getElementById('customerSegmentFilter')?.value??'';
+ const sort=document.getElementById('customerSort')?.value||'spend';
+ let list=customers.filter(c=>(c.customer_id+' '+c.customer_name).toLowerCase().includes(q)&&(seg===''||c.segment===Number(seg)));
+ if(sort==='spend')list.sort((a,b)=>b.total_spend-a.total_spend);
+ if(sort==='orders')list.sort((a,b)=>b.orders-a.orders);
+ if(sort==='engagement')list.sort((a,b)=>b.engagement-a.engagement);
+ document.getElementById('visibleCount').textContent=fmt(list.length);
+ document.getElementById('customerAvgSpend').textContent=money(list.length?list.reduce((a,c)=>a+c.total_spend,0)/list.length:0);
+ document.getElementById('customerAvgOrders').textContent=list.length?(list.reduce((a,c)=>a+c.orders,0)/list.length).toFixed(1):'0';
+ document.getElementById('highEngagement').textContent=(list.length?list.filter(c=>c.engagement>=70).length/list.length*100:0).toFixed(0)+'%';
+ document.getElementById('customerTable').innerHTML=list.slice(0,100).map(c=>`<tr><td><div class="customer-cell"><div class="mini-avatar" style="background:${SEGMENTS[c.segment].bg};color:${SEGMENTS[c.segment].color}">${c.customer_name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div>${c.customer_name}<div class="card-sub" style="margin-top:3px">${c.customer_id}</div></div></div></td><td>${tag(c.segment)}</td><td><b>${money(c.total_spend)}</b></td><td>${c.orders}</td><td>${c.days_since_purchase} days ago</td><td>${c.engagement}/100</td><td><button class="secondary-btn" style="padding:7px 9px" onclick="viewCustomer('${c.customer_id}')">View</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty-state">No customers match your filters.</td></tr>';
+ document.getElementById('customerPagination').textContent=`Showing ${Math.min(100,list.length)} of ${list.length} matching customers.`;
+}
+function viewCustomer(id){
+ const c=customers.find(x=>x.customer_id===id);if(!c)return;
+ const el=document.getElementById('customerDetail');el.style.display='block';
+ el.innerHTML=`<div class="card-head"><div class="customer-profile"><div class="profile-avatar">${c.customer_name.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><h3 style="margin-bottom:5px">${c.customer_name}</h3><div class="card-sub">${c.customer_id} · ${SEGMENTS[c.segment].name}</div></div></div><button class="secondary-btn" onclick="document.getElementById('customerDetail').style.display='none'">Close</button></div><div class="customer-detail-grid"><div class="detail-box"><span>Total spend</span><strong>${money(c.total_spend)}</strong></div><div class="detail-box"><span>Orders</span><strong>${c.orders}</strong></div><div class="detail-box"><span>Average order value</span><strong>${money(c.average_order_value)}</strong></div><div class="detail-box"><span>Days since purchase</span><strong>${c.days_since_purchase}</strong></div><div class="detail-box"><span>Engagement score</span><strong>${c.engagement}/100</strong></div><div class="detail-box"><span>Discount usage</span><strong>${(c.discount_usage*100).toFixed(0)}%</strong></div></div><h3>Suggested next action</h3><p class="note">${SEGMENTS[c.segment].strategy}</p><button class="primary-btn" onclick="openSegmentStrategy(${c.segment})">Create segment strategy →</button>`;
+ el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function openSegmentStrategy(i){
+ navigate('strategist');document.getElementById('strategySegment').value=i;generateStrategy();
+}
+function generateStrategy(){
+ const i=Number(document.getElementById('strategySegment').value||0),s=SEGMENTS[i];
+ const objective=document.getElementById('strategyObjective').value;
+ const channel=document.getElementById('strategyChannel').value;
+ const context=document.getElementById('strategyContext').value.trim();
+ const objectiveMap={
+  retention:{label:'Improve retention',action:'Build a lifecycle journey based on purchase recency. Use relevant product recommendations and service-oriented reminders before introducing incentives.',kpi:'Repeat purchase rate, reactivation rate, and incremental margin.'},
+  revenue:{label:'Increase revenue per customer',action:'Test complementary product recommendations, bundles, or premium alternatives. Keep recommendations relevant and monitor average order value alongside contribution margin.',kpi:'Average order value, revenue per customer, and contribution margin.'},
+  conversion:{label:'Improve conversion rate',action:'Identify friction between interest and purchase. Test clearer product information, checkout improvements, social proof, and consent-based reminders.',kpi:'Conversion rate, cart recovery, and checkout completion.'},
+  engagement:{label:'Increase engagement',action:'Personalise content using demonstrated interests. Compare useful product education, new-arrival updates, and interactive content against a control group.',kpi:'Qualified clicks, repeat visits, and downstream purchase rate.'},
+  acquisition:{label:'Encourage referrals and acquisition',action:'Test a referral or advocacy programme with customers who demonstrate strong satisfaction or repeat behavior. Measure referred-customer quality, not just referral volume.',kpi:'Referral conversion, acquisition cost, and referred-customer retention.'}
+ };
+ const o=objectiveMap[objective];
+ const output=`STRATEGY BRIEF\n${s.name}\n\nCUSTOMER INSIGHT\n${s.behavior} This segment requires a distinct value proposition rather than the same campaign used for all customers.\n\nOBJECTIVE\n${o.label}\n\nRECOMMENDED ACTIONS\n1. ${s.strategy}\n2. Deliver the message through ${channel.toLowerCase()}, with frequency limits and clear opt-out options where applicable.\n3. Run an A/B test against a control group before rolling out the campaign broadly.\n4. Compare results by segment and customer value; avoid treating clicks or impressions as the only success measure.\n\nMESSAGE DIRECTION\nUse a relevant, specific message that reflects this group's observed behavior. Avoid unsupported assumptions about customer identity or motivations.\n\nMEASUREMENT\nPrimary KPI: ${o.kpi}\nSecondary KPI: ${s.kpi}\n\nGUARDRAILS\nSet a budget cap, protect customer privacy, avoid excessive messaging, and review incremental margin before scaling.\n${context?'\nADDITIONAL CONTEXT\n'+context:''}\n\nDEMO DISCLAIMER\nThis recommendation was generated using predefined rules in the browser. It is not a live LLM response. Validate the recommendation against real customer data before execution.`;
+ document.getElementById('strategyOutput').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Recommended action plan</h3><button class="secondary-btn" onclick="copyStrategy()" style="padding:7px 9px">Copy</button></div><div class="result-content" id="strategyText"></div>`;
+ document.getElementById('strategyText').textContent=output;
+ window.currentStrategy=output;
+}
+function copyStrategy(){if(!window.currentStrategy)return;navigator.clipboard?.writeText(window.currentStrategy).then(()=>alert('Strategy copied.')).catch(()=>alert(window.currentStrategy));}
+function renderCampaigns(){
+ document.getElementById('campaignCount').textContent=campaigns.length;
+ document.getElementById('campaignGrid').innerHTML=campaigns.map((c,i)=>`<div class="segment-card"><div class="segment-top"><span class="pill">CAMPAIGN BRIEF ${String(i+1).padStart(2,'0')}</span><span style="font-size:20px;color:${SEGMENTS[c.segment].color}">↗</span></div><h3>${c.name}</h3><p>${c.message}</p><div class="segment-meta">Audience: ${SEGMENTS[c.segment].name}</div><div class="progress"><span style="width:${65+i*10}%;background:${SEGMENTS[c.segment].color}"></span></div><div class="segment-foot"><span>${c.channel}</span><button onclick="viewCampaign(${i})">View brief →</button></div></div>`).join('');
+}
+function viewCampaign(i){
+ const c=campaigns[i],el=document.getElementById('campaignDetail');el.style.display='block';
+ el.innerHTML=`<div class="card-head"><div><div class="eyebrow">CAMPAIGN BRIEF</div><h3>${c.name}</h3></div><button class="secondary-btn" onclick="elHide()">Close</button></div><div class="customer-detail-grid"><div class="detail-box"><span>Audience</span><strong style="font-size:14px">${SEGMENTS[c.segment].name}</strong></div><div class="detail-box"><span>Channel</span><strong style="font-size:14px">${c.channel}</strong></div><div class="detail-box"><span>Budget approach</span><strong style="font-size:14px">${c.budget}</strong></div></div><div class="recommendation"><strong>Objective</strong><p>${c.objective}</p></div><div class="recommendation"><strong>Message direction</strong><p>${c.message}</p></div><div class="recommendation"><strong>Success metric</strong><p>${c.kpi}</p></div><button class="primary-btn" onclick="openSegmentStrategy(${c.segment})">Develop full strategy →</button>`;
+ el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function elHide(){document.getElementById('campaignDetail').style.display='none'}
+function createCampaign(){
+ const name=prompt('Campaign name:');if(!name)return;
+ const segRaw=prompt('Segment number (1–6):','1');if(segRaw===null)return;
+ const seg=Math.max(0,Math.min(5,Number(segRaw)-1||0));
+ campaigns.push({name,segment:seg,channel:'Omnichannel campaign',objective:'Define campaign objective',message:'Add a customer-specific message and offer.',kpi:'Select a measurable business KPI',budget:'To be defined'});
+ renderCampaigns();
+}
+function exportCSV(){
+ const header=['customer_id','customer_name','segment','total_spend','orders','days_since_purchase','discount_usage','engagement','average_order_value'];
+ const rows=customers.map(c=>[c.customer_id,c.customer_name,SEGMENTS[c.segment].name,c.total_spend,c.orders,c.days_since_purchase,c.discount_usage,c.engagement,c.average_order_value]);
+ downloadFile([header,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'segmentiq_customers.csv','text/csv');
+}
+function downloadFile(content,name,type){const blob=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function downloadTemplate(){
+ const rows=[['customer_id','customer_name','total_spend','orders','days_since_purchase','discount_usage','engagement','average_order_value','website_visits','product_views','cart_additions','email_clicks'],['CUST-001','Sample Customer',8500,4,20,0.25,78,2125,15,35,3,5]];
+ downloadFile(rows.map(r=>r.join(',')).join('\n'),'segmentiq_template.csv','text/csv');
+}
+function handleCSV(event){
+ const file=event.target.files[0];if(!file)return;
+ Papa.parse(file,{header:true,skipEmptyLines:true,complete:(result)=>{
+  try{
+   const rows=result.data;
+   if(!rows.length)throw new Error('The CSV file contains no records.');
+   const keys=Object.keys(rows[0]).map(k=>k.trim().toLowerCase());
+   const idKey=keys.find(k=>['customer_id','customerid','id'].includes(k));
+   const spendKey=keys.find(k=>['total_spend','total spend','spend','total_amount','revenue'].includes(k));
+   const ordersKey=keys.find(k=>['orders','order_count','purchase_frequency','number_of_orders'].includes(k));
+   if(!idKey||!spendKey)throw new Error('Required columns missing. Include customer_id and total_spend. Download the template for the supported format.');
+   const keyMap={};Object.keys(rows[0]).forEach(k=>keyMap[k.trim().toLowerCase()]=k);
+   customers=rows.map((r,i)=>{
+    const get=(aliases,def)=>{const k=keys.find(x=>aliases.includes(x));return k?Number(r[keyMap[k]])||0:def};
+    const spend=get(['total_spend','total spend','spend','total_amount','revenue'],0);
+    const orders=Math.max(1,get(['orders','order_count','purchase_frequency','number_of_orders'],1));
+    const days=get(['days_since_purchase','days since purchase','recency','days_since_last_purchase'],45);
+    const discountRaw=get(['discount_usage','discount usage','discount_rate','discount_used'],.3);
+    const discount=discountRaw>1?discountRaw/100:discountRaw;
+    const engagement=get(['engagement','engagement_score','engagement score'],50);
+    const views=get(['product_views','product views'],10);
+    const cart=get(['cart_additions','cart additions','cart_adds'],2);
+    let s;
+    if(days>90&&orders>=3)s=3;
+    else if(views>=20&&cart>=3&&orders<=2)s=4;
+    else if(discount>.55)s=1;
+    else if(orders>=6&&spend>=9000)s=0;
+    else if(orders<=2&&spend>=7000)s=5;
+    else s=2;
+    return {customer_id:String(r[keyMap[idKey]]||'CUST-'+(i+1)),customer_name:r[keyMap[keys.find(k=>['customer_name','name'].includes(k))]]||'Customer '+(i+1),segment:s,total_spend:spend,orders,days_since_purchase:days,discount_usage:discount,engagement:engagement,average_order_value:get(['average_order_value','avg_order_value'],spend/orders),website_visits:get(['website_visits','visits'],0),product_views:views,cart_additions:cart,email_clicks:get(['email_clicks','email clicks'],0)};
+   });
+   document.getElementById('uploadStatus').textContent=`Loaded ${fmt(customers.length)} customer records. Segment assignment uses simple demo rules, not machine-learning clustering.`;
+   document.getElementById('dataStatus').textContent='CUSTOM DATA';
+   document.getElementById('dataRecords').textContent=fmt(customers.length);
+   document.getElementById('dataFields').textContent=keys.length;
+   document.getElementById('dataSource').textContent='Uploaded CSV';
+   initialiseSelectors();renderAll();
+  }catch(e){document.getElementById('uploadStatus').textContent='Import error: '+e.message;}
+ },error:()=>document.getElementById('uploadStatus').textContent='Could not read this CSV file.'});
+}
+function resetDemo(){
+ makeDemoCustomers();
+ document.getElementById('dataStatus').textContent='SAMPLE DATA';
+ document.getElementById('dataRecords').textContent=fmt(customers.length);
+ document.getElementById('dataFields').textContent='12';
+ document.getElementById('dataSource').textContent='Demo';
+ document.getElementById('uploadStatus').textContent='Sample dataset restored.';
+ initialiseSelectors();renderAll();
+}
+function initialiseSelectors(){
+ const options=SEGMENTS.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('');
+ document.getElementById('strategySegment').innerHTML=options;
+ document.getElementById('customerSegmentFilter').innerHTML='<option value="">All segments</option>'+options;
+}
+function renderAll(){renderDashboard();renderSegments();renderCustomers();renderCampaigns()}
+function navigate(name){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById('page-'+name).classList.add('active');
+ document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+ const item=document.querySelector(`.nav-item[data-page="${name}"]`);
+ document.getElementById('breadcrumb').textContent=item?item.textContent.trim():'Executive Dashboard';
+ document.getElementById('sidebar').classList.remove('open');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>navigate(item.dataset.page)));
+makeDemoCustomers();
+initialiseSelectors();
+renderAll();
+</script>
+</body>
+</html>
+```
